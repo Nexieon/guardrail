@@ -1,67 +1,58 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
+'use client'
 
-import { cn } from "@/lib/utils"
+import React from 'react'
+import Link, { LinkProps } from 'next/link'
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
-        outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
-        ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
-        destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
-      },
-      size: {
-        default:
-          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
+// 1. THE STYLE GENERATOR
+// We pull the Tailwind strings out into their own function so anything can use them.
+export function getButtonClasses(variant: 'primary' | 'secondary' | 'ghost' | 'icon' = 'primary', className = '') {
+  const baseClasses = "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-95"
+  
+  let variantClasses = ""
+  switch (variant) {
+    case 'primary':
+      variantClasses = "cursor-pointer text-sm px-6 py-2.5 rounded-md bg-brand-primary text-white border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary hover:shadow-card"
+      break
+    case 'secondary':
+      variantClasses = "cursor-pointer text-sm px-6 py-2.5 rounded-md bg-brand-secondary text-white border border-transparent hover:bg-white hover:text-brand-secondary hover:border-brand-secondary hover:shadow-card"
+      break
+    case 'ghost':
+      variantClasses = "cursor-pointer text-sm px-6 py-2.5 rounded-md bg-red text-brand-primary border-b-2 border-transparent hover:border-b-brand-primary hover:shadow-card"
+      break
+    case 'icon':
+      variantClasses = "cursor-pointer p-2.5 rounded-md bg-brand-primary text-white border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary hover:shadow-card [&>svg]:pointer-events-none touch-manipulation"
+      break
   }
-)
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  asChild = false,
-  ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot.Root : "button"
+  return `${baseClasses} ${variantClasses} ${className}`
+}
 
+// 2. THE STANDARD BUTTON
+// Use this for form submissions, toggles, or general onClick events.
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'icon'
+}
+
+export function Button({ variant, className = '', children, ...props }: ButtonProps) {
   return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <button className={getButtonClasses(variant, className)} {...props}>
+      {children}
+    </button>
   )
 }
 
-export { Button, buttonVariants }
+// 3. THE NEXT.JS LINK BUTTON
+// Use this EXACTLY like a Next.js <Link>, but it will look like your buttons.
+interface ButtonLinkProps extends LinkProps {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'icon'
+  className?: string
+  children: React.ReactNode
+}
+
+export function ButtonLink({ variant, className = '', children, ...props }: ButtonLinkProps) {
+  return (
+    <Link className={getButtonClasses(variant, className)} {...props}>
+      {children}
+    </Link>
+  )
+}

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -5,9 +6,19 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* --- YOUR CUSTOM FIGMA BRAND VARIABLES --- */
+  --color-brand-primary: #FD501D;
+  --color-brand-secondary: #FF8D28;
+  --color-brand-offwhite: #F3F3F3;
+  --color-brand-divider: #DCDCDC;
+  --shadow-card: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  
+  /* Overriding the default sans font to use Manrope */
+  --font-sans: 'Manrope', sans-serif;
+
+  /* --- DEFAULT SHADCN SYSTEM VARIABLES --- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -122,9 +133,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Updated to use your Figma off-white background */
+    @apply bg-brand-offwhite text-foreground font-sans antialiased;
   }
   html {
-    @apply font-sans;
+    scroll-behavior: smooth;
   }
 }
