@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { ArrowRight, ArrowLeft, Mail, Lock, Building, Briefcase, Factory } from 'lucide-react'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,13 +74,6 @@ export default function SignupWizard() {
     <>
       <Navbar />
       <div className="flex min-h-screen flex-col bg-brand-offwhite">
-        
-        {/* Header */}
-        <header className="flex w-full items-center justify-between p-6 sm:px-8">
-          <ButtonLink href="/login" variant="primary" className="transition-colors">
-            Have an Account? Log In Instead
-          </ButtonLink>
-        </header>
 
         {/* Main Wizard Container */}
         <main className="flex flex-1 items-center justify-center p-4">
@@ -138,6 +130,9 @@ export default function SignupWizard() {
                     >
                       Continue <ArrowRight className="h-4 w-4" />
                     </Button>
+                    <ButtonLink href="/login" variant="primary">
+                      Have an Account? Log In Instead
+                    </ButtonLink>
                   </div>
                 </div>
               )}
@@ -155,7 +150,7 @@ export default function SignupWizard() {
                       label="Company Name"
                       type="text"
                       icon={<Building className="h-5 w-5" />}
-                      placeholder="Acme Design Co."
+                      placeholder="My Design Co."
                       value={formData.companyName}
                       onChange={(e: any) => updateForm('companyName', e.target.value)}
                     />
@@ -227,7 +222,6 @@ export default function SignupWizard() {
                   </div>
                 </div>
               )}
-
             </div>
           </div>
         </main>
