@@ -9,6 +9,7 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/ui/footer'
 import { Select } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
+import { redirect } from 'next/navigation'
 
 const AGENCY_TYPES = [
   { value: "solo_freelancer", label: "Solo Freelancer" },
@@ -24,7 +25,6 @@ const INDUSTRIES = [
   { value: "other", label: "Other" },
 ]
 
-// Removed the 'async' keyword here
 export default function SignupWizard() {
   const [step, setStep] = useState(1)
   
@@ -61,14 +61,52 @@ export default function SignupWizard() {
   }, [])
 
   const updateForm = (field: string, value: string) => {
+    console.log(field, value);
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleCompleteRegistration = async () => {
-    // HANDLING THE REGISTRATION
-    console.log("Submitting to Supabase:", formData)
-    alert("Registration Complete! Redirecting...")
+    const supabase = await createClient()
+    
+    // 1. Sign up the user
+    const { data: authData, error: authError } = await supabase.auth.signUp(formData);
+
+    if (authError) {
+      alert(authError.message);
+      return; // Stop execution if auth fails
+    }
+
+    // Ensure we actually have a user ID before proceeding
+    const userId = authData.user?.id;
+    if (!userId) {
+      alert("Sign up succeeded but no user ID was returned. Check email confirmation settings.");
+      return;
+    }
+    
+    // 2. Insert into the agencies table
+    const { data: dbData, error: dbError } = await supabase
+      .from('agencies')
+      .insert([
+        {
+          user_id: userId,
+          company_name: formData.companyName,
+          agency_type: formData.agencyType,
+          industry: formData.industry,
+          subscription_tier: formData.tier
+        }
+      ])
+      .select(); // Forces Supabase to return the row so you can verify it
+
+    if (dbError) {
+      console.error("Database Insert Error Details:", dbError);
+      alert(`Database Error: ${dbError.message}`);
+      return;
+    }
+
+    alert(`Signed up and profile created for: ${userId}`);
+    // redirect('/account'); // Safe to redirect now
   }
+
 
   return (
     <>
