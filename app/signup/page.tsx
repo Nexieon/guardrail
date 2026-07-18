@@ -9,7 +9,6 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/ui/footer'
 import { Select } from '@/components/ui/select'
 import { createClient } from '@/lib/supabase/client'
-import { redirect } from 'next/navigation'
 
 const AGENCY_TYPES = [
   { value: "solo_freelancer", label: "Solo Freelancer" },
