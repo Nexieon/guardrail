@@ -60,10 +60,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const pathname = usePathname()
 
-    // Calculate the title instantly on every render (No state or effects needed!)
+    // Calculate the title instantly on every render
     const pathSegments = pathname?.split('/').filter(Boolean) || []
-    const lastSegment = pathSegments[pathSegments.length - 1] || 'Dashboard'
-    const currentLink = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
+    let currentLink = 'Dashboard'
+
+    if (pathSegments.length > 0) {
+        // Intercept dynamic routes (like /client/1 or /client/xyz)
+        if (pathSegments[0] === 'client' && pathSegments.length > 1) {
+            currentLink = 'Client Profile'
+        } else {
+            // Default fallback: capitalize the last segment
+            const lastSegment = pathSegments[pathSegments.length - 1]
+            currentLink = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
+        }
+    }
 
     useEffect(() => {
 
@@ -214,7 +224,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <Link href="/" className="flex items-center gap-2">
                             {/* Using your specific brand-primary color for the logo */}
                             <div className="h-8 w-8 text-brand-primary flex-shrink-0">
-                                <img src={"guardrail-logo.svg"} />
+                                <img src={"/guardrail-logo.svg"} />
                             </div>
                             <span className="text-xl font-bold tracking-tight text-black">
                                 GuardRail

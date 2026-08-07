@@ -1,20 +1,14 @@
-export default function ClientsPage() {
-  return (
-    <div className="space-y-6">
-      {/* Page Title & Subtitle */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-black">
-          Welcome back, Ibrahim.
-        </h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          Here is what needs your attention today.
-        </p>
-      </div>
+ // Adjust the path to your clients.ts file
+import { getWorkspaceClients } from '@/lib/clients'
+import ClientsTableUI from './ui'
 
-      {/* A blank visual placeholder so you can test how the main content area feels */}
-      <div className="h-96 rounded-2xl border-2 border-dashed border-zinc-200 flex items-center justify-center text-zinc-400">
-        clients content canvas ready for your custom components
-      </div>
-    </div>
-  )
+export default async function ClientsPage() {
+    // Fetch the real data from your Supabase handler securely on the server
+    const clientsData = await getWorkspaceClients('74c39c17-e908-4cd6-9f4d-7d1af791eff2')
+
+    console.log(clientsData)
+
+    // Pass the real data into your interactive client component
+    // We fall back to an empty array [] just in case the fetch fails or is null
+    return <ClientsTableUI initialClients={clientsData} />
 }

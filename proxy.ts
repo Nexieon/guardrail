@@ -24,7 +24,7 @@ export function proxy(req: NextRequest) {
   const rootDomain = isLocalhost ? hostname : 'guardrail.app'
 
   // The paths that belong to the actual SaaS app, not the marketing site
-  const appPaths = ['/dashboard', '/projects', '/clients', '/deliverables', '/billing', '/templates', '/settings']
+  const appPaths = ['/dashboard', '/projects', '/clients', '/deliverables', '/billing', '/templates', '/settings', '/client']
   const isAppPath = appPaths.some(path => url.pathname.startsWith(path))
 
   // 1. If they are on the main site (guardrail.app or localhost:3000)

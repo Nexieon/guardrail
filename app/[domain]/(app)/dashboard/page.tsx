@@ -72,6 +72,7 @@ export default function DashboardPage() {
 
       {/* Header */}
       <div>
+        {/** TODO: CHANGE THIS TITLE */}
         <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Welcome back, User.</h1>
         <p className="text-sm text-zinc-500 mt-1">Here's what needs your attention today.</p>
       </div>

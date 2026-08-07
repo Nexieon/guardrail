@@ -8,7 +8,7 @@ export interface NotificationItemData {
     user_id: string;
     title?: string;
     icon: NotificationIconType;
-    message: string;
+    message?: string;
     link_url: string;
     is_read: boolean;
     created_at: string;
