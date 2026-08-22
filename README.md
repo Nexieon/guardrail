@@ -1,3 +1,5 @@
+"Note: This is the underlying architecture and codebase for a proprietary application currently in production."
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
