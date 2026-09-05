@@ -1,5 +1,5 @@
  // Adjust the path to your clients.ts file
-import { getWorkspaceClients } from '@/lib/clients'
+import { getWorkspaceClients } from '@/lib/clients/clients'
 import ClientsTableUI from './ui'
 
 export default async function ClientsPage() {

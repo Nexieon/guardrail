@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useAlert } from "../util/alertprovider";
 import StatusBadge from "./statusbadge";
-import { Client } from "@/lib/supabase/client-data";
+import { Client } from "@/lib/clients/client-data";
 
 interface ClientRowProps {
     client: Client;

@@ -7,6 +7,7 @@ export interface CreateNotificationParams {
     message: string;
     icon?: NotificationIconType;
     linkUrl?: string;
+    clientId?: string;
 }
 
 /**
@@ -76,9 +77,25 @@ export async function createNotification(
                 message: params.message,
                 icon: params.icon || 'info',
                 link_url: params.linkUrl || null,
-                is_read: false
+                is_read: false,
+                client_id: params.clientId || null
             }
         ]);
 
     if (error) throw error;
+}
+
+/**
+ * Fetches the chronological activity history for a specific client.
+ */
+export async function getClientActivity(supabase: SupabaseClient, clientId: string): Promise<NotificationItemData[]> {
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(50); // Keeps the detail view rendering fast
+
+    if (error) throw error;
+    return data as NotificationItemData[];
 }

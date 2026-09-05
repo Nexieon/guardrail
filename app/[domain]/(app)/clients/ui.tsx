@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ClientRow from "@/components/ui/clientrow";
 import { Input } from "@/components/ui/input";
-import { Client } from "@/lib/supabase/client-data";
+import { Client } from "@/lib/clients/client-data";
 import { Search, Plus, ArrowUpDown } from 'lucide-react'
 import { useState } from "react";
 

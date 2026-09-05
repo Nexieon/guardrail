@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react'
 import { Modal } from '../modal'
 import { Button } from '../ui/button' 
 import { Check, Info, TriangleAlert, X } from 'lucide-react'
+import { Input } from '../ui/input'
 
 // What our alert function can accept
 type AlertOptions = {
@@ -13,6 +14,8 @@ type AlertOptions = {
     cancelText?: string
     icon?: AlertIconTypes
     destructive?: boolean // Makes the confirm button red
+    expectedInput?: string; // The exact string they must type (e.g., "DELETE")
+    inputPlaceholder?: string; // What shows in the empty box
 }
 
 type AlertIconTypes = 'success' | 'warning' | 'wrong' | 'info'
@@ -58,12 +61,14 @@ const AlertContext = createContext<AlertContextType | null>(null)
 export function AlertProvider({ children }: { children: ReactNode }) {
     const [isOpen, setIsOpen] = useState(false)
     const [options, setOptions] = useState<AlertOptions | null>(null)
+    const [inputValue, setInputValue] = useState('')
     
     // This stores the Promise resolver so we know when the user clicks a button
     const [resolver, setResolver] = useState<((value: boolean) => void) | null>(null)
 
     const showAlert = (newOptions: AlertOptions) => {
         setOptions(newOptions)
+        setInputValue('')
         setIsOpen(true)
         
         // Return a promise that resolves when the user clicks confirm or cancel
@@ -99,6 +104,22 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                             </p>
                         )}
                         
+                        {/* --- NEW INPUT SECTION --- */}
+                        {options?.expectedInput && (
+                            <div className="mt-4">
+                                <p className="text-sm text-zinc-700 mb-1.5">
+                                    Please type <span className="font-bold select-none">{options.expectedInput}</span> to confirm:
+                                </p>
+                                <Input 
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    placeholder={options.inputPlaceholder || ""}
+                                    className="w-full"
+                                />
+                            </div>
+                        )}
+
+                        {/* --- UPDATED BUTTONS --- */}
                         <div className="flex justify-end gap-3 mt-4">
                             {options?.cancelText && (
                                 <Button variant="ghost" onClick={() => handleClose(false)}>
@@ -108,6 +129,8 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                             <Button 
                                 variant={options?.destructive ? 'secondary' : 'primary'} 
                                 onClick={() => handleClose(true)}
+                                // Disable the button if they haven't typed the exact expected string
+                                disabled={options?.expectedInput ? inputValue !== options.expectedInput : false}
                             >
                                 {options?.confirmText || 'Confirm'}
                             </Button>

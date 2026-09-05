@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import ClientProfileClientUI from './ui'
-import { getClientById } from '@/lib/clients'
+import { getClientById } from '@/lib/clients/clients'
 
 export default async function ClientProfilePage({ params }: { params: { id: string } }) {
     // 1. Await the params before using them (Next.js 15 requirement, good practice regardless)

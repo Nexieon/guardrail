@@ -1,5 +1,6 @@
-import { createClient } from "./supabase/client"
-import { Client } from "./supabase/client-data"
+import { revalidatePath } from "next/cache"
+import { createClient } from "../supabase/client"
+import { Client } from "./client-data"
 
 
 export async function getClientById(id: string): Promise<Client | null> {
@@ -37,3 +38,4 @@ export async function getWorkspaceClients(agencyId: string): Promise<Client[]> {
 
     return clients || []
 }
+
