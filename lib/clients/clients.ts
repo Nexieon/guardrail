@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "../supabase/client"
 import { Client } from "./client-data"
+import { requireAuth } from "../supabase/server"
 
 
 export async function getClientById(id: string): Promise<Client | null> {
@@ -39,3 +40,25 @@ export async function getWorkspaceClients(agencyId: string): Promise<Client[]> {
     return clients || []
 }
 
+// (Assuming your manual getWorkspaceClients function is in this file or imported)
+
+export async function getCurrentWorkspaceClients() {
+    // 1. Grab the user AND the verified client instance
+    const { user, supabase } = await requireAuth()
+    
+    // Notice we DELETE the `const supabase = await createClient()` line here.
+
+    // 2. Query the agency using the exact same client
+    const { data: agency, error: agencyError } = await supabase
+        .from('agencies')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+    if (agencyError || !agency) {
+        throw new Error('No agency found for this user.') 
+    }
+
+    // 3. Return the data
+    return getWorkspaceClients(agency.id)
+}
