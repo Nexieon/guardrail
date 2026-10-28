@@ -1,9 +1,12 @@
 'use client'
 
+import NewClientForm from "@/components/modals/newClientForm";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import ClientRow from "@/components/ui/clientrow";
 import { Input } from "@/components/ui/input";
+import { useAlert } from "@/components/util/alertprovider";
+import { useModal } from "@/components/util/modalprovider";
 import { Client } from "@/lib/clients/client-data";
 import { Search, Plus, ArrowUpDown } from 'lucide-react'
 import { useState } from "react";
@@ -15,6 +18,8 @@ interface Props {
 export default function ClientsTableUI({ initialClients }: Props) {
     // Load the real database values into the initial state
     const [clients, setClients] = useState<Client[]>(initialClients)
+    const { showModal, closeModal } = useModal();
+    const { showAlert } = useAlert();
 
     const [searchQuery, setSearchQuery] = useState('')
 
@@ -68,7 +73,23 @@ export default function ClientsTableUI({ initialClients }: Props) {
                         <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Clients</h1>
                         <p className="text-sm text-zinc-500 mt-1">Manage your client directory and portal access.</p>
                     </div>
-                    <Button variant="primary" className="flex items-center gap-2">
+                    <Button variant="primary" className="flex items-center gap-2" onClick={() => {
+                        showModal(
+                            "Add New Client",
+                            <NewClientForm
+                                onCancel={closeModal}
+                                onSuccess={() => {
+                                    closeModal()
+                                    showAlert({
+                                    title: "Perfect!",
+                                    message: "Successfully added the new client",
+                                    confirmText: "Visit Profile",
+                                    icon: "success"
+                                    })
+                                }}
+                            />
+                        )
+                    }}>
                         <Plus className="h-4 w-4" /> Add Client
                     </Button>
                 </div>

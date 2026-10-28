@@ -18,15 +18,15 @@ import {
     X,
     Plus,
     User,
-    UploadCloud,
-    BookTemplate
 } from 'lucide-react'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Modal } from '@/components/modal'
 import NotificationItem, { NotificationItemData } from '@/components/ui/notification'
 import { getUserNotifications, markNotificationAsRead } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase/client'
+import { useAlert } from '@/components/util/alertprovider';
+import { useModal } from '@/components/util/modalprovider';
+import CreateNewMenu from '@/components/modals/createNewMenu';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -53,10 +53,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ]
 
     const [searchQuery, setSearchQuery] = useState("");
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-    
     const [notifications, setNotifications] = useState<NotificationItemData[]>([]);
+
+    const { showModal, closeModal } = useModal();
 
     const pathname = usePathname()
 
@@ -76,7 +75,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     useEffect(() => {
-
         const fetchNotifications = async () => {
             const supabase = createClient()
             try {
@@ -93,7 +91,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     useEffect(() => {
         // Create the function that opens the modal
-        const handleOpenNotifications = () => setIsNotificationsOpen(true);
+        const handleOpenNotifications = () => showModal(
+            `Your Notifications (${notifications.filter(e=>e.is_read == false).length} New)`,
+            <div className='grid gap-y-2 max-h-[350px] overflow-y-auto pr-2'>
+                {notifications.map(notif => (
+                    <NotificationItem
+                        notif={notif}
+                        key={notif.id}
+                        onClick={() => handleNotificationClick(notif.id)}
+                    />
+                ))}
+            </div>
+        );
         
         // Listen for our custom signal
         window.addEventListener('open-notifications', handleOpenNotifications);
@@ -109,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setNotifications(prev => 
             prev.map(n => n.id === id ? { ...n, is_read: true } : n)
         )
-        setIsNotificationsOpen(false) // Close the dropdown
+        closeModal();
         
         // Update the database in the background
         await markNotificationAsRead(supabase, id)
@@ -117,91 +126,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <>
-            {/* Global "Create New" Modal */}
-            <Modal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                title="What would you like to create?"
-            >
-                <div className="flex flex-col gap-3">
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsCreateModalOpen(false)}
-                        className="h-auto p-4 justify-start items-centergroup transition-all"
-                    >
-                        <div className="h-10 w-10 bg-zinc-100 rounded-lg flex items-center justify-center mr-4 group-hover:scale-105 transition-transform shrink-0">
-                            <FolderKanban className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900 transition-colors">New Project</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Start a new job and assign it to a client.</div>
-                        </div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsCreateModalOpen(false)}
-                        className="h-auto p-4 justify-start items-center group transition-all"
-                    >
-                        <div className="h-10 w-10 bg-zinc-100 rounded-lg flex items-center justify-center mr-4 group-hover:scale-105 transition-transform shrink-0">
-                            <Users className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900  transition-colors">Add Client</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Create a new client profile.</div>
-                        </div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsCreateModalOpen(false)}
-                        className="h-auto p-4 justify-start items-center"
-                    >
-                        <div className="h-10 w-10 bg-zinc-100 rounded-lg flex items-center justify-center mr-4  group-hover:text-white transition-colors shrink-0">
-                            <UploadCloud className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900 transition-colors">Upload Deliverable</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Quickly drop a file into an existing project.</div>
-                        </div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsCreateModalOpen(false)}
-                        className="h-auto p-4 justify-start items-center"
-                    >
-                        <div className="h-10 w-10 bg-zinc-100 rounded-lg flex items-center justify-center mr-4 group-hover:text-white transition-colors shrink-0">
-                            <BookTemplate className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900 transition-colors">New Template</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Quickly create a new template for forms or any other deliverable.</div>
-                        </div>
-                    </Button>
-
-                </div>
-            </Modal>
-
-            {/* Alert Modal Notifications */}
-            <Modal
-                isOpen={isNotificationsOpen}
-                onClose={() => setIsNotificationsOpen(false)}
-                title={`Your Notifications (${notifications.filter(e=>e.is_read == false).length} New)`}
-            >
-                {/* Added max-h-[350px], overflow-y-auto, and a little right padding for the scrollbar */}
-                <div className='grid gap-y-2 max-h-[350px] overflow-y-auto pr-2'>
-                    {notifications.map(notif => (
-                        <NotificationItem
-                            notif={notif}
-                            key={notif.id}
-                            onClick={() => handleNotificationClick(notif.id)}
-                        />
-                    ))}
-                </div>
-            </Modal>
-
             <div className="min-h-screen bg-[#F8F9FA] flex">
 
                 {/* Mobile Sidebar Overlay */}
@@ -360,11 +284,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                         {/* Right Side Actions */}
                         <div className="flex items-center gap-4 flex-1 justify-end">
-                            <Button variant='primary' className="hidden md:flex items-center gap-1.5" onClick={() => setIsCreateModalOpen(true)}>
+                            <Button variant='primary' className="hidden md:flex items-center gap-1.5" onClick={() => {
+                                showModal(
+                                    "What would you like to create?",
+                                    <CreateNewMenu 
+                                        closeMenu={closeModal}
+                                    />
+                                );
+                            }}>
                                 <Plus className="h-4 w-4" /> <p className={"hidden md:flex"}>Create New</p>
                             </Button>
 
-                            <Button variant='icon' className="relative transition-colors" onClick={() => setIsNotificationsOpen(true)}>
+                            <Button variant='icon' className="relative transition-colors" onClick={() => {
+                                showModal(
+                                    `Your Notifications (${notifications.filter(e=>e.is_read == false).length} New)`,
+                                    <div className='grid gap-y-2 max-h-[350px] overflow-y-auto pr-2'>
+                                        {notifications.map(notif => (
+                                            <NotificationItem
+                                                notif={notif}
+                                                key={notif.id}
+                                                onClick={() => handleNotificationClick(notif.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                );
+                            }}>
                                 <Bell className="h-5 w-5" />
                                 {/* Notification Dot */}
                                 {notifications.filter(e=>e.is_read == false).length > 0 ? <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" /> : <></>}

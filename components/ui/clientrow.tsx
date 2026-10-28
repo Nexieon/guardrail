@@ -10,7 +10,10 @@ import {
 } from "@/components/ui/tooltip"
 import { useAlert } from "../util/alertprovider";
 import StatusBadge from "./statusbadge";
-import { Client } from "@/lib/clients/client-data";
+import { Client, ClientStatus } from "@/lib/clients/client-data";
+import { useModal } from "../util/modalprovider";
+import ClientActionsMenu from "../modals/clientActionsMenu";
+import { updateClient } from "@/lib/clients/actions";
 
 interface ClientRowProps {
     client: Client;
@@ -32,8 +35,11 @@ function formatTimeAgo(dateString: string | null) {
 }
 
 export default function ClientRow({client} :ClientRowProps) {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const { showAlert } = useAlert(); // Initialize the custom alert
+    const { showModal, closeModal } = useModal();
+    const [clientStatus, setClientStatus] = useState(client.status);
+
+    const [isLoading, setIsLoading] = useState(false);
 
     const copyClientDashLink = async () => {
         const link = `https://app.guardrail.com/c/${client.id}`;
@@ -48,58 +54,53 @@ export default function ClientRow({client} :ClientRowProps) {
         });
     }
 
+    const handleUpdateStatus = async (newStatus: ClientStatus) => {
+        const isArchiving = newStatus === 'Archived';
+        
+        // 1. Call your custom alert
+        const isConfirmed = await showAlert({
+            title: isArchiving ? "Archive Client" : "Reactivate Client",
+            message: isArchiving 
+            ? "Are you sure you want to archive this client? This will restrict their portal access." 
+            : "Are you sure you want to request to reactivate this client?",
+            confirmText: isArchiving ? "Archive" : "Reactivate",
+            cancelText: "Cancel",
+            icon: "warning" // Uses your yellow TriangleAlert
+        });
+        
+        // 2. Escape hatch
+        if (!isConfirmed) return;
+        
+        setIsLoading(true);
+        
+        // 3. Update database
+        const updatedClient = await updateClient(client.id, { 
+            status: newStatus
+        });
+        
+        if (updatedClient) {
+            setClientStatus(newStatus);
+            
+            showAlert({
+                title: "Success",
+                message: `Client successfully ${isArchiving ? 'archived' : 'reactivated'}.`,
+                confirmText: "Close",
+                icon: "success"
+            });
+        } else {
+            showAlert({
+                title: "Error",
+                message: `Failed to update status`,
+                confirmText: "Close",
+                icon: "wrong"
+            });
+        }
+        
+        setIsLoading(false);
+    }
+
     return (
         <>
-        <Modal isOpen={isDropdownOpen} onClose={()=>setIsDropdownOpen(false)} title={`More options for ${client.company_name}`}>
-            <div className="flex flex-col gap-3">
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="h-auto p-4 justify-start items-centergroup transition-all"
-                    >
-                         
-                        <div className="h-10 w-10 rounded-lg flex items-center justify-center mr-4 group-hover:scale-105 transition-transform shrink-0">
-                            <Mail className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900  transition-colors">Email Portal Link</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Send an automated email to your client containg the link to their easy passwordless dashboard.</div>
-                        </div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="h-auto p-4 justify-start items-centergroup transition-all"
-                    >
-                         
-                        <div className="h-10 w-10 rounded-lg flex items-center justify-center mr-4 group-hover:scale-105 transition-transform shrink-0">
-                            <CreditCard className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900  transition-colors">Send Invoice</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Prepare an send an invoice to your client.</div>
-                        </div>
-                    </Button>
-
-                    <Button
-                        variant="ghost"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="h-auto p-4 justify-start items-centergroup transition-all"
-                    >
-                         
-                        <div className="h-10 w-10 rounded-lg flex items-center justify-center mr-4 group-hover:scale-105 transition-transform shrink-0">
-                            <Archive className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                            <div className="font-semibold text-zinc-900  transition-colors">Archive Client</div>
-                            <div className="text-xs text-zinc-500 font-normal mt-0.5">Hides the client (Only removes them from list and blocks them, to fully delete, go into ...)</div>
-                        </div>
-                    </Button>
-
-                </div>
-        </Modal>
         <tr className="hover:bg-zinc-50/50 transition-colors group">
             
             {/* Company Column */}
@@ -124,7 +125,7 @@ export default function ClientRow({client} :ClientRowProps) {
 
             {/* Status Column */}
             <td className="px-6 py-4 whitespace-nowrap">
-                <StatusBadge status={client.status} />
+                <StatusBadge status={clientStatus} />
             </td>
 
             {/* Projects Column */}
@@ -167,7 +168,13 @@ export default function ClientRow({client} :ClientRowProps) {
                         
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="icon" className="h-10 w-10 p-0" onClick={()=> setIsDropdownOpen(true)}>
+                                <Button variant="icon" className="h-10 w-10 p-0" onClick={()=> showModal(
+                                    `More options for ${client.company_name}`,
+                                    <ClientActionsMenu
+                                        closeMenu={closeModal}
+                                        handleUpdateStatus={handleUpdateStatus}
+                                    />
+                                )}>
                                     <MoreHorizontal/>
                                 </Button>
                             </TooltipTrigger>

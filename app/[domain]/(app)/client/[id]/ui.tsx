@@ -28,8 +28,6 @@ const MOCK_PROJECTS = [
 export default function ClientProfileClientUI({ initialClient }: Props) {
     const [isLoading, setIsLoading] = useState(false);
     const { showAlert } = useAlert();
-
-    //
     
     // Client Info Card
     const [isEditing, setIsEditing] = useState(false)

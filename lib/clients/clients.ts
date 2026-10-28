@@ -1,4 +1,3 @@
-import { revalidatePath } from "next/cache"
 import { createClient } from "../supabase/client"
 import { Client } from "./client-data"
 import { requireAuth } from "../supabase/server"
@@ -30,11 +29,9 @@ export async function getWorkspaceClients(agencyId: string): Promise<Client[]> {
         .eq('agency_id', agencyId)
         .order('created_at', { ascending: false }) // Sorts newest clients first
 
-    console.log(clients);
-
     if (error) {
         console.error("Error fetching workspace clients:", error.message)
-        return [] // Return an empty array so your frontend map function doesn't crash
+        return [] // Return an empty array so frontend map function doesn't crash
     }
 
     return clients || []
@@ -46,8 +43,6 @@ export async function getCurrentWorkspaceClients() {
     // 1. Grab the user AND the verified client instance
     const { user, supabase } = await requireAuth()
     
-    // Notice we DELETE the `const supabase = await createClient()` line here.
-
     // 2. Query the agency using the exact same client
     const { data: agency, error: agencyError } = await supabase
         .from('agencies')

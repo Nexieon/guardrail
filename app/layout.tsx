@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AlertProvider } from "@/components/util/alertprovider";
+import { ModalProvider } from "@/components/util/modalprovider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +32,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AlertProvider>
-          {children}
+          <ModalProvider>
+              {children}
+          </ModalProvider>
         </AlertProvider>
       </body>
     </html>
