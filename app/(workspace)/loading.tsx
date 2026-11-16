@@ -1,6 +1,6 @@
 import { Loader2 } from 'lucide-react'
 
-export default function AppLoading() {
+export default function WorkspaceLoading() {
   return (
     <div className="h-full w-full flex flex-col items-center justify-center min-h-[60vh]">
       <Loader2 className="h-8 w-8 text-brand-primary animate-spin" />

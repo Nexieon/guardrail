@@ -1,14 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowRight, ArrowLeft, Mail, Lock, Building, Briefcase, Factory } from 'lucide-react'
-import { Button, ButtonLink } from '@/components/ui/button'
+import { ArrowRight, ArrowLeft, Mail, Lock, Building, Briefcase, Factory, Globe } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { TierSelection } from '@/components/ui/tierselection'
+import { TierSelection, Tier } from '@/components/ui/tierselection'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/ui/footer'
 import { Select } from '@/components/ui/select'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/browser'
+import { registerAgency } from '@/lib/auth/actions'
+import { generateSlug } from '@/lib/utils'
+import { useAlert } from '@/components/util/alertprovider'
+import Link from 'next/link'
 
 const AGENCY_TYPES = [
   { value: "solo_freelancer", label: "Solo Freelancer" },
@@ -26,97 +30,83 @@ const INDUSTRIES = [
 
 export default function SignupWizard() {
   const [step, setStep] = useState(1)
-  
-  // Added state to hold the database tiers
-  const [dbTiers, setDbTiers] = useState<any[]>([])
-  const [isLoadingTiers, setIsLoadingTiers] = useState(true)
+  const [dbTiers, setDbTiers] = useState<Tier[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCustomSlug, setIsCustomSlug] = useState(false)
+  const { showAlert } = useAlert()
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     companyName: '',
+    slug: '',
     agencyType: '',
     industry: '',
     tier: 'free'
   })
 
-  // The client-side database fetch
   useEffect(() => {
     const fetchTiers = async () => {
       const supabase = createClient()
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('pricing_tiers')
         .select('*')
         .eq('is_active', true)
         .order('sort_order', { ascending: true })
 
       if (data) {
-        setDbTiers(data)
+        setDbTiers(data as unknown as Tier[])
       }
-      setIsLoadingTiers(false)
     }
 
     fetchTiers()
   }, [])
 
   const updateForm = (field: string, value: string) => {
-    console.log(field, value);
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => {
+      const next = { ...prev, [field]: value }
+      // Auto-suggest slug from company name unless user explicitly edited the slug
+      if (field === 'companyName' && !isCustomSlug) {
+        next.slug = generateSlug(value)
+      }
+      return next
+    })
   }
 
   const handleCompleteRegistration = async () => {
-    const supabase = await createClient()
-    
-    // 1. Sign up the user
-    const { data: authData, error: authError } = await supabase.auth.signUp(formData);
+    setIsSubmitting(true)
+    const result = await registerAgency(formData)
+    setIsSubmitting(false)
 
-    if (authError) {
-      alert(authError.message);
-      return; // Stop execution if auth fails
+    if (!result.success) {
+      showAlert({
+        title: "Registration Error",
+        message: result.error || "Could not complete registration.",
+        confirmText: "Ok",
+        icon: "wrong"
+      })
+      return
     }
 
-    // Ensure we actually have a user ID before proceeding
-    const userId = authData.user?.id;
-    if (!userId) {
-      alert("Sign up succeeded but no user ID was returned. Check email confirmation settings.");
-      return;
-    }
-    
-    // 2. Insert into the agencies table
-    const { data: dbData, error: dbError } = await supabase
-      .from('agencies')
-      .insert([
-        {
-          user_id: userId,
-          company_name: formData.companyName,
-          agency_type: formData.agencyType,
-          industry: formData.industry,
-          subscription_tier: formData.tier
-        }
-      ])
-      .select(); // Forces Supabase to return the row so you can verify it
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'guardrail.com'
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1'))
 
-    if (dbError) {
-      console.error("Database Insert Error Details:", dbError);
-      alert(`Database Error: ${dbError.message}`);
-      return;
+    // Seamless redirect to their agency workspace
+    if (isLocal) {
+      window.location.href = '/dashboard'
+    } else {
+      window.location.href = `https://${result.slug}.${rootDomain}/dashboard`
     }
-
-    alert(`Signed up and profile created for: ${userId}`);
-    // redirect('/account'); // Safe to redirect now
   }
-
 
   return (
     <>
       <Navbar />
       <div className="flex min-h-screen flex-col bg-brand-offwhite">
-
-        {/* Main Wizard Container */}
         <main className="flex flex-1 items-center justify-center p-4">
           <div className="w-full max-w-md">
             
-            {/* Animated Progress Bar */}
+            {/* Progress Bar */}
             <div className="mb-8">
               <div className="flex justify-between text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">
                 <span>Account</span>
@@ -139,7 +129,7 @@ export default function SignupWizard() {
                 <div className="animate-in fade-in slide-in-from-right-8 duration-500 fill-mode-both">
                   <div className="mb-8 text-center">
                     <h1 className="text-2xl font-extrabold text-black">Create your workspace</h1>
-                    <p className="mt-2 text-sm text-zinc-500">Enter your details to get started.</p>
+                    <p className="mt-2 text-sm text-zinc-500">Enter your credentials to get started.</p>
                   </div>
                   
                   <div className="flex flex-col gap-5">
@@ -149,7 +139,8 @@ export default function SignupWizard() {
                       icon={<Mail className="h-5 w-5" />}
                       placeholder="you@agency.com"
                       value={formData.email}
-                      onChange={(e: any) => updateForm('email', e.target.value)}
+                      onChange={(e) => updateForm('email', e.target.value)}
+                      required
                     />
                     <Input
                       label="Password"
@@ -157,7 +148,8 @@ export default function SignupWizard() {
                       icon={<Lock className="h-5 w-5" />}
                       placeholder="••••••••"
                       value={formData.password}
-                      onChange={(e: any) => updateForm('password', e.target.value)}
+                      onChange={(e) => updateForm('password', e.target.value)}
+                      required
                     />
                     <Button 
                       variant="primary" 
@@ -167,9 +159,12 @@ export default function SignupWizard() {
                     >
                       Continue <ArrowRight className="h-4 w-4" />
                     </Button>
-                    <ButtonLink href="/login" variant="primary">
-                      Have an Account? Log In Instead
-                    </ButtonLink>
+                    <div className="text-center text-sm text-zinc-500 mt-2">
+                      Already have an account?{' '}
+                      <Link href="/login" className="font-semibold text-brand-primary hover:text-brand-primary-hover">
+                        Log in
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
@@ -179,7 +174,7 @@ export default function SignupWizard() {
                 <div className="animate-in fade-in slide-in-from-right-8 duration-500 fill-mode-both">
                   <div className="mb-8 text-center">
                     <h1 className="text-2xl font-extrabold text-black">Workspace details</h1>
-                    <p className="mt-2 text-sm text-zinc-500">How should we configure your portal?</p>
+                    <p className="mt-2 text-sm text-zinc-500">How should clients address your agency?</p>
                   </div>
                   
                   <div className="flex flex-col gap-5">
@@ -187,10 +182,29 @@ export default function SignupWizard() {
                       label="Company Name"
                       type="text"
                       icon={<Building className="h-5 w-5" />}
-                      placeholder="My Design Co."
+                      placeholder="Acme Studio"
                       value={formData.companyName}
-                      onChange={(e: any) => updateForm('companyName', e.target.value)}
+                      onChange={(e) => updateForm('companyName', e.target.value)}
+                      required
                     />
+
+                    {/* Workspace URL with suggested default */}
+                    <div>
+                      <Input
+                        label="Workspace Subdomain"
+                        type="text"
+                        icon={<Globe className="h-5 w-5" />}
+                        placeholder="acme-studio"
+                        value={formData.slug}
+                        onChange={(e) => {
+                          setIsCustomSlug(true)
+                          updateForm('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                        }}
+                      />
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Your portal will be reachable at: <span className="font-semibold text-zinc-700">{formData.slug || 'your-agency'}.guardrail.com</span>
+                      </p>
+                    </div>
 
                     <Select
                       label="Workspace Type"
@@ -211,16 +225,16 @@ export default function SignupWizard() {
                     />
                     
                     <div className="mt-4 flex gap-3">
-                      <Button variant="icon" className="px-4 border border-brand-divider" onClick={() => setStep(1)}>
+                      <Button variant="ghost" className="px-4 border border-brand-divider" onClick={() => setStep(1)}>
                         <ArrowLeft className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="primary" 
                         className="flex-1"
                         onClick={() => setStep(3)}
-                        disabled={!formData.companyName || !formData.agencyType || !formData.industry}
+                        disabled={!formData.companyName}
                       >
-                        Continue <ArrowRight className="h-4 w-4" />
+                        Select Plan <ArrowRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -231,39 +245,37 @@ export default function SignupWizard() {
               {step === 3 && (
                 <div className="animate-in fade-in slide-in-from-right-8 duration-500 fill-mode-both">
                   <div className="mb-8 text-center">
-                    <h1 className="text-2xl font-extrabold text-black">Select your plan</h1>
-                    <p className="mt-2 text-sm text-zinc-500">You can upgrade at any time.</p>
+                    <h1 className="text-2xl font-extrabold text-black">Choose your plan</h1>
+                    <p className="mt-2 text-sm text-zinc-500">Pick the tier that fits your agency size.</p>
                   </div>
                   
-                  {isLoadingTiers ? (
-                    <div className="py-8 text-center text-sm text-zinc-500">Loading plans...</div>
-                  ) : (
-                    <TierSelection 
-                      tiers={dbTiers} 
-                      selectedTier={formData.tier}
-                      onSelect={(slug: string) => updateForm('tier', slug)}
-                    />
-                  )}
+                  <TierSelection 
+                    tiers={dbTiers}
+                    selectedTier={formData.tier}
+                    onSelect={(slug: string) => updateForm('tier', slug)}
+                  />
 
                   <div className="mt-8 flex gap-3">
-                    <Button variant="icon" className="px-4 border border-brand-divider" onClick={() => setStep(2)}>
+                    <Button variant="ghost" className="px-4 border border-brand-divider" onClick={() => setStep(2)}>
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <Button 
                       variant="primary" 
-                      className="flex-1"
+                      className="flex-1" 
                       onClick={handleCompleteRegistration}
+                      disabled={isSubmitting}
                     >
-                      Complete Setup
+                      {isSubmitting ? 'Creating Workspace...' : 'Complete & Launch'}
                     </Button>
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         </main>
+        <Footer />
       </div>
-      <Footer/>
     </>
   )
 }

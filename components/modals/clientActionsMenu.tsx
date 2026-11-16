@@ -2,12 +2,11 @@
 
 import { Mail, CreditCard, Archive } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ClientStatus } from '@/lib/clients/client-data';
+import { ClientStatus } from '@/lib/clients/client-data'
 
 interface ClientActionsMenuProps {
-  closeMenu: () => void;
-  handleUpdateStatus: (newStatus: ClientStatus) => Promise<void>;
-  // clientId?: string; // You will likely need to pass the specific client ID here later to trigger the actual API calls
+  closeMenu: () => void
+  handleUpdateStatus: (newStatus: ClientStatus) => Promise<void>
 }
 
 export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: ClientActionsMenuProps) {
@@ -18,7 +17,6 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         variant="ghost"
         onClick={() => {
           closeMenu()
-          // TODO: Trigger email API
         }}
         className="h-auto p-4 justify-start items-center group transition-all"
       >
@@ -27,7 +25,7 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         </div>
         <div className="text-left">
           <div className="font-semibold text-zinc-900 transition-colors">Email Portal Link</div>
-          <div className="text-xs text-zinc-500 font-normal mt-0.5">Send an automated email to your client containing the link to their easy passwordless dashboard.</div>
+          <div className="text-xs text-zinc-500 font-normal mt-0.5">Send a passwordless dashboard access link to your client.</div>
         </div>
       </Button>
 
@@ -36,7 +34,6 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         variant="ghost"
         onClick={() => {
           closeMenu()
-          // TODO: Open Send Invoice Modal
         }}
         className="h-auto p-4 justify-start items-center group transition-all"
       >
@@ -45,7 +42,7 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         </div>
         <div className="text-left">
           <div className="font-semibold text-zinc-900 transition-colors">Send Invoice</div>
-          <div className="text-xs text-zinc-500 font-normal mt-0.5">Prepare and send an invoice to your client.</div>
+          <div className="text-xs text-zinc-500 font-normal mt-0.5">Prepare and send a project invoice.</div>
         </div>
       </Button>
 
@@ -54,7 +51,7 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         variant="ghost"
         onClick={() => {
           closeMenu()
-          handleUpdateStatus("Archived");
+          handleUpdateStatus("Archived")
         }}
         className="h-auto p-4 justify-start items-center group transition-all hover:bg-red-50"
       >
@@ -63,7 +60,7 @@ export default function ClientActionsMenu({ closeMenu, handleUpdateStatus }: Cli
         </div>
         <div className="text-left">
           <div className="font-semibold text-red-600 transition-colors">Archive Client</div>
-          <div className="text-xs text-zinc-500 font-normal mt-0.5">Hides the client (Only removes them from list and blocks them, to fully delete, go into ...)</div>
+          <div className="text-xs text-zinc-500 font-normal mt-0.5">Restricts client portal access and hides from active lists.</div>
         </div>
       </Button>
     </div>

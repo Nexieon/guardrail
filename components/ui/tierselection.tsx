@@ -1,7 +1,7 @@
 import { CheckCircle2 } from 'lucide-react'
 
 // Define the shape of your Supabase row so TypeScript knows what to expect
-interface Tier {
+export interface Tier {
   id: string
   slug: string
   name: string

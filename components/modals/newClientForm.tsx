@@ -2,14 +2,27 @@
 
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { createNewClient } from '@/lib/clients/actions'
 import { useAlert } from '../util/alertprovider'
-import { redirect } from 'next/navigation'
 
-export default function NewClientForm({ onSuccess, onCancel }: { onSuccess?: (clientId: string) => void, onCancel?: () => void }) {
+interface NewClientFormProps {
+  onSuccess?: (clientId: string) => void
+  onCancel?: () => void
+}
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD - US Dollar' },
+  { value: 'CAD', label: 'CAD - Canadian Dollar' },
+  { value: 'EUR', label: 'EUR - Euro' },
+  { value: 'GBP', label: 'GBP - British Pound' },
+]
+
+export default function NewClientForm({ onSuccess, onCancel }: NewClientFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { showAlert } = useAlert();
+  const [currency, setCurrency] = useState('USD')
+  const { showAlert } = useAlert()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -21,21 +34,19 @@ export default function NewClientForm({ onSuccess, onCancel }: { onSuccess?: (cl
       company_name: formData.get('company_name') as string,
       contact_name: formData.get('contact_name') as string,
       email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      currency: formData.get('currency') as string,
+      phone: (formData.get('phone') as string) || null,
+      currency: currency || 'USD',
     }
 
     const result = await createNewClient(clientData)
-
-    // FIX: Always turn off the loading state regardless of success/fail
     setIsSubmitting(false)
 
-    if (result.success) {
+    if (result.success && result.data) {
       if (onSuccess) onSuccess(result.data.id)
     } else {
       showAlert({
         title: "Oh No!",
-        message: `There was a problem while creating the client... ${result.error}`,
+        message: `There was a problem while creating the client: ${result.error}`,
         confirmText: "Ok",
         icon: "wrong"
       })
@@ -47,76 +58,51 @@ export default function NewClientForm({ onSuccess, onCancel }: { onSuccess?: (cl
       <div className="space-y-4">
         {/* Company & Contact (Required Fields) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <label htmlFor="company_name" className="text-sm font-medium text-zinc-900">
-              Company Name <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="company_name"
-              name="company_name"
-              placeholder="e.g. Acme Corp"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="contact_name" className="text-sm font-medium text-zinc-900">
-              Primary Contact <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="contact_name"
-              name="contact_name"
-              placeholder="e.g. Jane Doe"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Email (Required) */}
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-zinc-900">
-            Email Address <span className="text-red-500">*</span>
-          </label>
           <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="jane@acmecorp.com"
+            id="company_name"
+            name="company_name"
+            label="Company Name *"
+            placeholder="e.g. Acme Corp"
+            required
+          />
+
+          <Input
+            id="contact_name"
+            name="contact_name"
+            label="Primary Contact *"
+            placeholder="e.g. Jane Doe"
             required
           />
         </div>
 
+        {/* Email (Required) */}
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          label="Email Address *"
+          placeholder="jane@acmecorp.com"
+          required
+        />
+
         {/* Phone & Currency (Optional Fields) */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <label htmlFor="phone" className="text-sm font-medium text-zinc-700">
-              Phone Number
-            </label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              placeholder="(555) 000-0000"
-            />
-          </div>
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            label="Phone Number"
+            placeholder="(555) 000-0000"
+          />
 
-          <div className="space-y-1.5">
-            <label htmlFor="currency" className="text-sm font-medium text-zinc-700">
-              Default Currency
-            </label>
-            {/* Replace with your custom <Select> component if you have one */}
-            <select
-              id="currency"
-              name="currency"
-              className="flex h-10 w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
-              defaultValue="USD"
-            >
-              <option value="USD">USD - US Dollar</option>
-              <option value="CAD">CAD - Canadian Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-              <option value="GBP">GBP - British Pound</option>
-            </select>
-          </div>
+          <Select
+            id="currency"
+            name="currency"
+            label="Default Currency"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            options={CURRENCY_OPTIONS}
+          />
         </div>
       </div>
 
@@ -132,8 +118,8 @@ export default function NewClientForm({ onSuccess, onCancel }: { onSuccess?: (cl
         </Button>
         <Button
           type="submit"
+          variant="primary"
           disabled={isSubmitting}
-          className="bg-brand-primary text-white hover:bg-[#E04618]"
         >
           {isSubmitting ? 'Saving...' : 'Save Client'}
         </Button>

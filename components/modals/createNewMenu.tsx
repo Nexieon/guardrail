@@ -8,7 +8,7 @@ import { useModal } from '../util/modalprovider'
 import { useRouter } from 'next/navigation'
 
 interface CreateNewMenuProps {
-  closeMenu: () => void;
+  closeMenu: () => void
 }
 
 export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
@@ -23,7 +23,6 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
         variant="ghost"
         onClick={() => {
           closeMenu()
-          // Future: showModal("New Project", <NewProjectForm />)
         }}
         className="h-auto p-4 justify-start items-center group transition-all"
       >
@@ -40,22 +39,23 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
       <Button
         variant="ghost"
         onClick={() => {
-          closeMenu() // Close the current menu
-          
-          // Instantly trigger the global modal with the form
+          closeMenu()
           showModal(
             "Add New Client",
             <NewClientForm
               onCancel={closeModal}
-              onSuccess={(clientId) => {
+              onSuccess={async (clientId) => {
                 closeModal()
-                showAlert({
+                const confirmed = await showAlert({
                   title: "Perfect!",
                   message: "Successfully added the new client",
                   confirmText: "Visit Profile",
+                  cancelText: "Close",
                   icon: "success",
                 })
-                router.push(`/client/${clientId}`)
+                if (confirmed) {
+                  router.push(`/client/${clientId}`)
+                }
               }}
             />
           )
@@ -76,7 +76,6 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
         variant="ghost"
         onClick={() => {
           closeMenu()
-          // Future: showModal("Upload Deliverable", <UploadForm />)
         }}
         className="h-auto p-4 justify-start items-center group transition-all"
       >
@@ -94,7 +93,6 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
         variant="ghost"
         onClick={() => {
           closeMenu()
-          // Future: showModal("New Template", <TemplateForm />)
         }}
         className="h-auto p-4 justify-start items-center group transition-all"
       >
@@ -103,7 +101,7 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
         </div>
         <div className="text-left">
           <div className="font-semibold text-zinc-900 transition-colors">New Template</div>
-          <div className="text-xs text-zinc-500 font-normal mt-0.5">Quickly create a new template for forms or any other deliverable.</div>
+          <div className="text-xs text-zinc-500 font-normal mt-0.5">Save reusable sets of deliverables and tasks.</div>
         </div>
       </Button>
     </div>

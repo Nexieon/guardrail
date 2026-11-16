@@ -1,107 +1,102 @@
-// lib/actions.ts
-'use server' // <-- This tells Next.js to NEVER send this file to the browser
+'use server'
 
 import { revalidatePath } from "next/cache"
-import { createClient } from "../supabase/client"
+import { createClient } from "../supabase/server"
 import { Client } from "./client-data"
-import { cookies } from "next/headers"
-import { requireAuth } from "../supabase/server"
+import { requireAgency } from "../auth/session"
 
-export async function updateClient(id: string, updateData: Partial<Client>): Promise<Client | null> {
-    const supabase = await createClient()
-
-    const { data: client, error } = await supabase
-        .from('clients')
-        .update(updateData)
-        .eq('id', id)       // 1. Targets the exact row
-        .select()           // 2. Asks Supabase to return the new data
-        .single()           // 3. Ensures it returns an object, not an array
-
-    if (error) {
-        console.error("Error updating client:", error.message)
-        return null
-    }
-
-    // 4. Purges the Next.js cache so your UI updates instantly
-    revalidatePath(`/client/${id}`)
-    revalidatePath('/clients') // Good idea to refresh the master table too
-
-    return client
-}
-
-export async function deleteClient(id: string) {
-    const supabase = await createClient()
-
-    const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', id) // CRITICAL: Targets the exact row to delete
-
-    if (error) {
-        console.error("Error deleting client:", error.message)
-        return { success: false, error: error.message }
-    }
-
-    // Purge the cache for the master table so the UI updates instantly
-    revalidatePath('/clients')
-
-    return { success: true }
-}
-
-// Exact Payload we expect from newClientForm
 export interface CreateClientInput {
-    company_name: string;
-    contact_name: string;
-    email: string;
-    phone?: string | null;
-    currency?: string;
+  company_name: string
+  contact_name: string
+  email: string
+  phone?: string | null
+  currency?: string
 }
 
+/**
+ * Updates a client row, strictly enforcing that the client belongs to the caller's agency.
+ */
+export async function updateClient(id: string, updateData: Partial<Client>): Promise<Client | null> {
+  const agency = await requireAgency()
+  const supabase = await createClient()
+
+  const { data: client, error } = await supabase
+    .from('clients')
+    .update(updateData)
+    .eq('id', id)
+    .eq('agency_id', agency.id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error updating client:", error.message)
+    return null
+  }
+
+  revalidatePath(`/client/${id}`)
+  revalidatePath('/clients')
+
+  return client as Client
+}
+
+/**
+ * Deletes a client row, strictly enforcing that the client belongs to the caller's agency.
+ */
+export async function deleteClient(id: string): Promise<{ success: boolean; error?: string }> {
+  const agency = await requireAgency()
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', id)
+    .eq('agency_id', agency.id)
+
+  if (error) {
+    console.error("Error deleting client:", error.message)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/clients')
+  revalidatePath('/dashboard')
+
+  return { success: true }
+}
+
+/**
+ * Creates a new client under the caller's authenticated agency.
+ */
 export async function createNewClient(data: CreateClientInput) {
   try {
-    const { user, supabase } = await requireAuth()
-    
-    // 1. Fetch the user's agency_id from the 'agencies' table
-    const { data: agencyRecord, error: agencyError } = await supabase
-      .from('agencies')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
+    const agency = await requireAgency()
+    const supabase = await createClient()
 
-    if (agencyError || !agencyRecord?.id) {
-      console.error('Could not find agency for user:', agencyError)
-      return { success: false, error: 'Could not locate your agency profile. Have you set up your agency yet?' }
-    }
-
-    // 2. Insert the client using the correct agency ID
     const { data: newClient, error: insertError } = await supabase
       .from('clients')
       .insert({
-        company_name: data.company_name, 
-        contact_name: data.contact_name, 
-        email: data.email,               
-        phone: data.phone || null,       
+        company_name: data.company_name,
+        contact_name: data.contact_name,
+        email: data.email,
+        phone: data.phone || null,
         currency: data.currency || 'USD',
-        agency_id: agencyRecord.id, // <-- Using the fetched agency ID!
-        status: 'Active',                
-        total_billed: 0,                 
-        outstanding_balance: 0           
+        agency_id: agency.id,
+        status: 'Active',
+        total_billed: 0,
+        outstanding_balance: 0
       })
       .select()
       .single()
 
     if (insertError) {
-      console.error('Error inserting client:', insertError)
       return { success: false, error: insertError.message }
     }
 
     revalidatePath('/clients')
     revalidatePath('/dashboard')
 
-    return { success: true, data: newClient }
-
-  } catch (error) {
-    console.error('Action Error:', error)
-    return { success: false, error: 'An unexpected error occurred.' }
+    return { success: true, data: newClient as Client }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
+    return { success: false, error: message }
   }
 }

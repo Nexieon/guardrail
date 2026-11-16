@@ -1,13 +1,14 @@
-import React from 'react'
+'use client'
+
+import React, { useId } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-// Define what an option looks like
 export interface SelectOption {
   value: string
   label: string
 }
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string
   icon?: React.ReactNode
   options: SelectOption[]
@@ -23,41 +24,41 @@ export function Select({
   id, 
   ...props 
 }: SelectProps) {
-  
-  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : Math.random().toString(36).substr(2, 9))
+  const generatedId = useId()
+  const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : generatedId)
 
   return (
     <div className="flex w-full flex-col gap-1.5">
-      {/* Label */}
       {label && (
-        <label htmlFor={selectId} className="block text-sm font-semibold text-black">
+        <label htmlFor={selectId} className="block text-sm font-semibold text-zinc-900">
           {label}
         </label>
       )}
       
       <div className="relative flex items-center">
-        {/* Optional Left Icon */}
         {icon && (
           <div className="absolute left-4 flex items-center justify-center text-brand-primary pointer-events-none">
             {icon}
           </div>
         )}
         
-        {/* The actual Select dropdown */}
         <select
           id={selectId}
           className={`
             w-full appearance-none rounded-lg border border-brand-primary bg-white py-2.5 text-black 
             transition-all duration-200 cursor-pointer
-            focus:border-brand-primary focus:outline-none focus:ring-0 focus:shadow-card
+            focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:shadow-card
+            disabled:opacity-50 disabled:cursor-not-allowed
             ${icon ? 'pl-11 pr-10' : 'pl-4 pr-10'} 
             ${className}
           `}
           {...props}
         >
-          <option value="" disabled>
-            {placeholder}
-          </option>
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -65,11 +66,9 @@ export function Select({
           ))}
         </select>
 
-        {/* Custom Right Chevron Arrow */}
         <div className="absolute right-4 flex items-center justify-center text-brand-primary pointer-events-none">
           <ChevronDown className="h-4 w-4 opacity-70" />
         </div>
-        
       </div>
     </div>
   )

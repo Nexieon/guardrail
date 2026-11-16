@@ -1,70 +1,87 @@
 # Guardrail
- 
+
 Multi-tenant B2B SaaS CRM and client portal for web development agencies, built to manage client relationships, project pipelines, and financial tracking with strict per-tenant data isolation.
- 
-**Status:** Actively in development · Not yet deployed
- 
+
+**Status:** Actively in development · Refactored Architecture
+
 ---
- 
-## Overview
- 
-Guardrail gives agencies like [Nexieon](https://github.com/nexieon) a single platform to onboard clients, track project and financial health, and give each client a dedicated, isolated dashboard — without spinning up separate infrastructure per tenant.
- 
-The system is built around three core requirements:
- 
-- **Strict tenant isolation** — no client can ever access another client's data, enforced at the database layer rather than trusted to application logic alone.
-- **Subdomain-based routing** — each tenant gets a clean, dedicated `[domain]`-style entry point, resolved dynamically rather than hardcoded.
-- **Low client-side overhead** — dashboards feel instant by pushing data-heavy work to the server and shipping minimal JavaScript to the browser.
+
+## Architecture & Tenancy Model
+
+### 1. Multi-Tenant Domain Routing (`proxy.ts` & `lib/tenants/host.ts`)
+Guardrail uses Next.js 16 edge proxy routing (`proxy.ts`) to inspect the incoming `Host` header and categorize traffic:
+- **Apex Domain (`guardrail.com`):** Serves the public marketing site (`/`), pricing, docs, and authentication (`/login`, `/signup`). Visits to app routes (`/dashboard`) redirect to the login/tenant handoff.
+- **Subdomains / Free Tier (`{slug}.guardrail.com`):** Serves the agency workspace. Agencies can bookmark `{slug}.guardrail.com` and log in directly at `{slug}.guardrail.com/login`, creating a host-scoped session.
+- **Custom Domains / Paid Tiers (`portal.agency.com`):** Fully white-labeled host matching the agency's `custom_domain` column.
+- **Localhost Development (`localhost:3000`):** Automatically routes to the authenticated user's workspace without requiring local DNS or hosts manipulation.
+
+### 2. Authentication & Data Security (`lib/auth/session.ts` & Supabase RLS)
+- **Server-Side Verification:** The workspace layout (`app/(workspace)/layout.tsx`) is a Server Component that invokes `requireAgency()`. Unauthenticated requests are redirected before the client shell renders.
+- **Agency-Scoped Operations:** All Server Actions (`lib/clients/actions.ts`) and queries (`lib/clients/clients.ts`) strictly filter by the caller's verified `agency_id`.
+- **Database Row-Level Security:** Enforced in PostgreSQL via `supabase/schema_tenancy_rls.sql` so client data is isolated even if an application check is bypassed.
+
+### 3. White-Label Design System (Tailwind CSS v4)
+Defined in `app/globals.css`:
+- `--color-brand-primary` (`#FD501D`)
+- `--color-brand-primary-hover` (`#E04618`)
+- `--color-brand-secondary` (`#FF8D28`)
+- `--color-brand-surface` (`#F8F9FA`)
+- `--color-brand-offwhite` (`#F3F3F3`)
+- `--color-brand-divider` (`#DCDCDC`)
+
+UI primitives (`Button`, `Input`, `Select`, `Card`, `StatusBadge`, `Money`, `StatCard`, `PageHeader`, `Textarea`, `SortHeader`, `EmptyState`) consume these tokens.
+
 ---
- 
-## Architecture
- 
-### Multi-Tenancy & Routing
-Custom edge middleware inspects incoming requests and resolves the tenant based on subdomain, rewriting the request into an internal `[domain]` route structure. This keeps tenant resolution out of application code and avoids full page reloads when switching context.
- 
-### Data Layer
-PostgreSQL via Supabase, with a normalized relational schema and Row-Level Security (RLS) policies enforcing tenant isolation directly at the database level. Access control is not something the application can accidentally bypass — it's guaranteed by the database itself, independent of any bug in the app layer.
- 
-### Rendering & Data Fetching
-Built on Next.js App Router with an emphasis on Server Components: data fetching and heavy computation happen server-side, keeping the client bundle small and pages fast on first load.
- 
-### UI System
-A bespoke design system built directly on Tailwind CSS with lightweight, strictly-typed internal components rather than a bundled component library — keeping the bundle size and design language fully under project control.
- 
-### Deployment
-Designed for serverless/edge deployment on Vercel, with GitHub for source control and CI.
- 
+
+## Project Structure
+
+```
+├── app/
+│   ├── (landing)/page.tsx       # Marketing homepage
+│   ├── login/page.tsx           # Direct & apex handoff login
+│   ├── signup/page.tsx          # 3-step signup wizard (slug auto-suggestion)
+│   ├── (workspace)/             # Authenticated tenant app routes
+│   │   ├── layout.tsx           # Server layout (requireAgency auth gate)
+│   │   ├── dashboard/           # Dashboard overview
+│   │   ├── clients/             # Clients directory
+│   │   ├── client/[id]/         # Client detail & management
+│   │   └── projects/            # Project pipeline & board
+│   ├── globals.css              # Tailwind v4 theme & brand tokens
+│   └── layout.tsx               # Root layout & providers
+├── components/
+│   ├── ui/                      # Pure design primitives
+│   ├── workspace/               # Authenticated shell, client row, notifications
+│   ├── modals/                  # Modal forms & dialogs
+│   ├── util/                    # Alert & modal providers
+│   ├── navbar.tsx               # Marketing navbar
+│   └── footer.tsx               # Marketing footer
+├── lib/
+│   ├── auth/                    # Auth session & server actions
+│   ├── clients/                 # Client data types & server actions
+│   ├── supabase/                # browser.ts & server.ts Supabase clients
+│   └── tenants/                 # host.ts tenant resolution
+├── supabase/
+│   └── schema_tenancy_rls.sql   # SQL migration for tenancy & RLS
+└── proxy.ts                     # Next.js 16 Edge proxy
+```
+
 ---
- 
-## Tech Stack
- 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js (App Router, Server Components) |
-| Language | TypeScript |
-| Database | PostgreSQL (Supabase), Row-Level Security |
-| Styling | Tailwind CSS |
-| Hosting | Vercel (Edge) |
-| Source Control / CI | GitHub |
- 
+
+## Environment Variables
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_ROOT_DOMAIN=guardrail.com
+```
+
 ---
- 
-## Core Features (In Progress)
- 
-- [x] Multi-tenant routing via edge middleware
-- [x] Row-Level Security data isolation
-- [ ] Client financial health dashboards
-- [ ] Project pipeline tracking
-- [ ] Activity feed / audit log per client
-- [ ] Global async confirmation/alert system
----
- 
-## Roadmap
- 
-Guardrail is under active development. Planned milestones include finishing the client dashboard experience, financial reporting views, and a first internal deployment for Nexieon's own client base before considering wider availability.
- 
----
- 
-## License
- 
-Proprietary — part of the Nexieon product suite. Not currently open for external contributions.
+
+## Verification
+
+Run the test suite and type check:
+```bash
+npx tsc --noEmit
+npm run build
+npm run lint
+```
