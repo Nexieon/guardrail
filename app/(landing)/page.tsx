@@ -120,12 +120,12 @@ export default async function Home() {
           {/* THIS IS WHERE THE DEMO VIDEO WILL GO LATER */}
           <div className="mt-16 sm:mt-20" id='demo'>
             <div className="relative mx-auto max-w-5xl rounded-xl border border-brand-divider bg-white p-2 shadow-card">
-              <div className="aspect-[16/9] w-full rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center overflow-hidden">
+              <div className="aspect-video w-full rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center overflow-hidden">
                 
                 {/* SVG / Product Preview Area */}
                 <div className="w-full h-full text-zinc-300 flex items-center justify-center">
                   <svg 
-                    className="w-full h-full max-h-[300px] p-8" 
+                    className="w-full h-full max-h-75 p-8" 
                     viewBox="0 0 800 450" 
                     fill="none" 
                     xmlns="http://www.w3.org/2000/svg"
@@ -174,7 +174,7 @@ export default async function Home() {
                 <h3 className="text-xl font-bold text-black mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-zinc-600 leading-relaxed flex-grow">
+                <p className="text-zinc-600 leading-relaxed grow">
                   {feature.description}
                 </p>
                 
@@ -235,7 +235,7 @@ export default async function Home() {
             {/* Right Column: Stacked Notification Cards */}
             <div className="flex flex-col gap-4">
               {notifications.map((note, index) => (
-                <Card key={index} className="flex flex-row items-start gap-4 !p-4 sm:!p-5 hover:scale-[1.01] transition-transform duration-200">
+                <Card key={index} className="flex flex-row items-start gap-4 p-4! sm:p-5! hover:scale-[1.01] transition-transform duration-200">
                   
                   {/* Icon Square */}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-primary shadow-sm mt-0.5">

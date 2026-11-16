@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import NewClientForm from './newClientForm'
 import { useAlert } from '../util/alertprovider'
 import { useModal } from '../util/modalprovider'
+import { useRouter } from 'next/navigation'
 
 interface CreateNewMenuProps {
   closeMenu: () => void;
@@ -13,6 +14,7 @@ interface CreateNewMenuProps {
 export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
   const { showModal, closeModal } = useModal()
   const { showAlert } = useAlert()
+  const router = useRouter()
 
   return (
     <div className="flex flex-col gap-3">
@@ -45,14 +47,15 @@ export default function CreateNewMenu({ closeMenu }: CreateNewMenuProps) {
             "Add New Client",
             <NewClientForm
               onCancel={closeModal}
-              onSuccess={() => {
+              onSuccess={(clientId) => {
                 closeModal()
                 showAlert({
                   title: "Perfect!",
                   message: "Successfully added the new client",
                   confirmText: "Visit Profile",
-                  icon: "success"
+                  icon: "success",
                 })
+                router.push(`/client/${clientId}`)
               }}
             />
           )

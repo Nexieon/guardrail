@@ -93,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         // Create the function that opens the modal
         const handleOpenNotifications = () => showModal(
             `Your Notifications (${notifications.filter(e=>e.is_read == false).length} New)`,
-            <div className='grid gap-y-2 max-h-[350px] overflow-y-auto pr-2'>
+            <div className='grid gap-y-2 max-h-87.5 overflow-y-auto pr-2'>
                 {notifications.map(notif => (
                     <NotificationItem
                         notif={notif}
@@ -140,14 +140,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <aside className={`
                 fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-zinc-200 transform transition-transform duration-300 ease-in-out flex flex-col
                 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
-                md:translate-x-0 md:static md:flex-shrink-0
+                md:translate-x-0 md:static md:shrink-0
                 `}>
                     {/* Logo Area */}
                     <div className="h-16 flex items-center px-6 border-b border-transparent mb-4 mt-2">
                         {/* LEFT: Logo & Brand Name */}
                         <Link href="/" className="flex items-center gap-2">
                             {/* Using your specific brand-primary color for the logo */}
-                            <div className="h-8 w-8 text-brand-primary flex-shrink-0">
+                            <div className="h-8 w-8 text-brand-primary shrink-0">
                                 <img src={"/guardrail-logo.svg"} />
                             </div>
                             <span className="text-xl font-bold tracking-tight text-black">
@@ -298,7 +298,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <Button variant='icon' className="relative transition-colors" onClick={() => {
                                 showModal(
                                     `Your Notifications (${notifications.filter(e=>e.is_read == false).length} New)`,
-                                    <div className='grid gap-y-2 max-h-[350px] overflow-y-auto pr-2'>
+                                    <div className='grid gap-y-2 max-h-87.5 overflow-y-auto pr-2'>
                                         {notifications.map(notif => (
                                             <NotificationItem
                                                 notif={notif}

@@ -7,7 +7,7 @@ export function Modal({ isOpen, onClose, title, children }: { isOpen: boolean, o
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 transition-opacity" onClick={onClose}>
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 transition-opacity" onClick={onClose}>
       {/* stopPropagation prevents clicks inside the modal from closing it */}
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-5 animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
         

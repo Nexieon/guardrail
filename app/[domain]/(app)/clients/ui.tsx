@@ -9,6 +9,7 @@ import { useAlert } from "@/components/util/alertprovider";
 import { useModal } from "@/components/util/modalprovider";
 import { Client } from "@/lib/clients/client-data";
 import { Search, Plus, ArrowUpDown } from 'lucide-react'
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface Props {
@@ -20,6 +21,7 @@ export default function ClientsTableUI({ initialClients }: Props) {
     const [clients, setClients] = useState<Client[]>(initialClients)
     const { showModal, closeModal } = useModal();
     const { showAlert } = useAlert();
+    const router = useRouter();
 
     const [searchQuery, setSearchQuery] = useState('')
 
@@ -78,14 +80,15 @@ export default function ClientsTableUI({ initialClients }: Props) {
                             "Add New Client",
                             <NewClientForm
                                 onCancel={closeModal}
-                                onSuccess={() => {
-                                    closeModal()
-                                    showAlert({
+                                onSuccess={(clientId) => {
+                                closeModal()
+                                showAlert({
                                     title: "Perfect!",
                                     message: "Successfully added the new client",
                                     confirmText: "Visit Profile",
-                                    icon: "success"
-                                    })
+                                    icon: "success",
+                                })
+                                router.push(`/client/${clientId}`)
                                 }}
                             />
                         )
