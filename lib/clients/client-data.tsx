@@ -20,6 +20,7 @@ export interface Client {
   last_login_at: string | null
   created_at: string
   updated_at: string
+  active_projects_count?: number
 }
 
 // Backwards-compatible helper bridging to the Money component

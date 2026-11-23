@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "../supabase/server"
 import { Client } from "./client-data"
 import { requireAgency } from "../auth/session"
+import { notifyAgency } from "../notifications/actions"
 
 export interface CreateClientInput {
   company_name: string
@@ -94,7 +95,16 @@ export async function createNewClient(data: CreateClientInput) {
     revalidatePath('/clients')
     revalidatePath('/dashboard')
 
-    return { success: true, data: newClient as Client }
+    // Automatically notify agency owner of new client
+    const notifRes = await notifyAgency({
+      title: "New Client Onboarded",
+      message: `${newClient.company_name} (${newClient.contact_name}) was added to your directory.`,
+      icon: "info",
+      linkUrl: `/client/${newClient.id}`,
+      clientId: newClient.id,
+    })
+
+    return { success: true, data: newClient as Client, notification: notifRes.data }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
     return { success: false, error: message }

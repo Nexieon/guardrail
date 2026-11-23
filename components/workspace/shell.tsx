@@ -25,6 +25,7 @@ import NotificationItem, { NotificationItemData } from '@/components/workspace/n
 import { getUserNotifications, markNotificationAsRead } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase/browser'
 import { useModal } from '@/components/util/modalprovider'
+import { useHeaderTitle } from '@/components/util/headertitleprovider'
 import CreateNewMenu from '@/components/modals/createNewMenu'
 import { Agency } from '@/lib/auth/session'
 
@@ -38,9 +39,45 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [notifications, setNotifications] = useState<NotificationItemData[]>([])
+  const [activeToast, setActiveToast] = useState<NotificationItemData | null>(null)
 
   const { showModal, closeModal } = useModal()
   const pathname = usePathname()
+
+  // Pleasant Web Audio API notification chime (no external audio files needed)
+  const playNotificationChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+
+      // Tone 1: C5 (523.25 Hz)
+      const osc1 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+      osc1.type = 'sine'
+      osc1.frequency.setValueAtTime(523.25, ctx.currentTime)
+      gain1.gain.setValueAtTime(0.1, ctx.currentTime)
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+      osc1.start(ctx.currentTime)
+      osc1.stop(ctx.currentTime + 0.3)
+
+      // Tone 2: E5 (659.25 Hz), soft chord interval 0.1s later
+      const osc2 = ctx.createOscillator()
+      const gain2 = ctx.createGain()
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1)
+      gain2.gain.setValueAtTime(0.1, ctx.currentTime + 0.1)
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+      osc2.connect(gain2)
+      gain2.connect(ctx.destination)
+      osc2.start(ctx.currentTime + 0.1)
+      osc2.stop(ctx.currentTime + 0.5)
+    } catch {
+      // Audio autoplay policy catch
+    }
+  }
 
   const workspaceLinks = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -61,12 +98,15 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
     { name: 'Subscription', href: '/settings/subscription' },
   ]
 
+  const { title: customHeaderTitle } = useHeaderTitle()
   const pathSegments = pathname?.split('/').filter(Boolean) || []
   let currentLink = 'Dashboard'
 
   if (pathSegments.length > 0) {
     if (pathSegments[0] === 'client' && pathSegments.length > 1) {
-      currentLink = 'Client Profile'
+      currentLink = customHeaderTitle || 'Client Profile'
+    } else if (pathSegments[0] === 'project' && pathSegments.length > 1) {
+      currentLink = customHeaderTitle || 'Project Details'
     } else {
       const lastSegment = pathSegments[pathSegments.length - 1]
       currentLink = lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
@@ -74,8 +114,9 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
   }
 
   useEffect(() => {
+    const supabase = createClient()
+
     const fetchNotifications = async () => {
-      const supabase = createClient()
       try {
         const data = await getUserNotifications(supabase)
         setNotifications(data as NotificationItemData[])
@@ -85,7 +126,57 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
     }
 
     fetchNotifications()
-  }, [])
+
+    // 1. Local real-time event listener (instant 0ms trigger for client actions)
+    const handleLocalNotif = (e: Event) => {
+      const customEvent = e as CustomEvent<NotificationItemData>
+      if (customEvent.detail) {
+        setNotifications(prev => {
+          if (prev.some(n => n.id === customEvent.detail.id)) return prev
+          return [customEvent.detail, ...prev]
+        })
+        playNotificationChime()
+        setActiveToast(customEvent.detail)
+      }
+    }
+    window.addEventListener('guardrail:notification', handleLocalNotif)
+
+    // 2. Supabase Realtime websocket listener (for external events / other devices)
+    const channel = supabase
+      .channel(`workspace-notifs-${agency.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+        },
+        (payload) => {
+          const newNotif = payload.new as NotificationItemData
+          setNotifications(prev => {
+            if (prev.some(n => n.id === newNotif.id)) return prev
+            return [newNotif, ...prev]
+          })
+          playNotificationChime()
+          setActiveToast(newNotif)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('guardrail:notification', handleLocalNotif)
+      supabase.removeChannel(channel)
+    }
+  }, [agency.id])
+
+  // Auto-dismiss bottom popup toast after 5 seconds
+  useEffect(() => {
+    if (!activeToast) return
+    const timer = setTimeout(() => {
+      setActiveToast(null)
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [activeToast])
 
   const handleNotificationClick = async (id: string) => {
     const supabase = createClient()
@@ -237,7 +328,22 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
             </Button>
 
             <div className="hidden md:flex items-center text-sm text-zinc-500">
-              Workspace <span className="mx-2">/</span> <span className="font-semibold text-zinc-900">{currentLink}</span>
+              Workspace <span className="mx-2">/</span>
+              {pathSegments[0] === 'project' && pathSegments.length > 1 ? (
+                <>
+                  <Link href="/projects" className="hover:text-zinc-900 transition-colors">Projects</Link>
+                  <span className="mx-2">/</span>
+                  <span className="font-semibold text-zinc-900 truncate max-w-xs">{customHeaderTitle || 'Project Details'}</span>
+                </>
+              ) : pathSegments[0] === 'client' && pathSegments.length > 1 ? (
+                <>
+                  <Link href="/clients" className="hover:text-zinc-900 transition-colors">Clients</Link>
+                  <span className="mx-2">/</span>
+                  <span className="font-semibold text-zinc-900 truncate max-w-xs">{customHeaderTitle || 'Client Profile'}</span>
+                </>
+              ) : (
+                <span className="font-semibold text-zinc-900">{currentLink}</span>
+              )}
             </div>
           </div>
 
@@ -290,6 +396,44 @@ export default function WorkspaceShell({ agency, children }: WorkspaceShellProps
           </div>
         </main>
       </div>
+
+      {/* Realtime Bottom-Corner Timed Notification Toast */}
+      {activeToast && (
+        <div 
+          onClick={() => {
+            setActiveToast(null)
+            openNotificationsModal()
+          }}
+          className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white rounded-2xl border border-brand-primary/40 p-4 shadow-2xl animate-in slide-in-from-bottom-5 fade-in duration-300 flex items-start justify-between gap-3 cursor-pointer hover:border-brand-primary group ring-1 ring-black/5"
+        >
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 rounded-xl bg-brand-primary text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+              <Bell className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-zinc-900 group-hover:text-brand-primary transition-colors flex items-center gap-1.5">
+                <span>{activeToast.title || 'New Notification'}</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-primary" />
+              </div>
+              <p className="text-xs text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
+                {activeToast.message}
+              </p>
+              <span className="text-[10px] text-zinc-400 mt-1.5 block">Click to open notifications →</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setActiveToast(null)
+            }}
+            className="text-zinc-400 hover:text-zinc-700 p-1 -mr-1 -mt-1 cursor-pointer"
+            title="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

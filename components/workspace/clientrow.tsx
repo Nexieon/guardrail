@@ -124,9 +124,11 @@ export default function ClientRow({ client }: ClientRowProps) {
         <StatusBadge status={clientStatus} />
       </td>
 
-      {/* Active Projects Placeholder */}
+      {/* Active Projects */}
       <td className="px-6 py-4 text-center">
-        <span className="text-zinc-600 font-medium">0</span>
+        <span className="text-zinc-600 font-medium">
+          {client.active_projects_count ?? 0}
+        </span>
       </td>
 
       {/* Last Login */}

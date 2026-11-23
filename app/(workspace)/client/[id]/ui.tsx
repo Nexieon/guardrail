@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft,
@@ -23,23 +24,22 @@ import NotificationItem, { NotificationItemData } from "@/components/workspace/n
 import { useAlert } from "@/components/util/alertprovider"
 import { deleteClient, updateClient } from "@/lib/clients/actions"
 import { Client, ClientStatus } from "@/lib/clients/client-data"
+import { Project } from "@/lib/projects/types"
 import { getClientActivity } from "@/lib/notifications"
 import { createClient } from "@/lib/supabase/browser"
+import { useHeaderTitle } from "@/components/util/headertitleprovider"
 
 interface Props {
   initialClient: Client
+  initialProjects?: Project[]
 }
 
-const MOCK_PROJECTS = [
-  { id: 101, name: "Q3 Corporate Tax Filing", status: "In Progress", date: "Aug 15, 2026" },
-  { id: 102, name: "Annual Financial Audit", status: "Pending", date: "Sep 01, 2026" },
-  { id: 103, name: "Payroll Setup", status: "Completed", date: "Jul 20, 2026" },
-]
-
-export default function ClientProfileClientUI({ initialClient }: Props) {
+export default function ClientProfileClientUI({ initialClient, initialProjects = [] }: Props) {
   const router = useRouter()
+  useHeaderTitle(initialClient.company_name)
   const { showAlert } = useAlert()
   const [isLoading, setIsLoading] = useState(false)
+  const projects = initialProjects
   
   // Client details editing state
   const [isEditing, setIsEditing] = useState(false)
@@ -304,23 +304,34 @@ export default function ClientProfileClientUI({ initialClient }: Props) {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-zinc-400" />
-                Active Projects
+                Active Projects ({projects.length})
               </h2>
-              <ButtonLink variant="ghost" href={`/projects?client=${initialClient.id}`} className="text-brand-primary">
-                View all
+              <ButtonLink variant="ghost" href="/projects" className="text-brand-primary text-xs">
+                View all projects →
               </ButtonLink>
             </div>
             
             <div className="space-y-3">
-              {MOCK_PROJECTS.map((project) => (
+              {projects.map((project) => (
                 <div key={project.id} className="flex items-center justify-between p-3.5 rounded-lg border border-zinc-100 bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                   <div>
-                    <div className="font-semibold text-zinc-900 text-sm">{project.name}</div>
-                    <div className="text-xs text-zinc-500 mt-0.5">Due {project.date}</div>
+                    <Link href={`/project/${project.id}`} className="font-semibold text-zinc-900 text-sm hover:text-brand-primary transition-colors block">
+                      {project.name}
+                    </Link>
+                    <div className="text-xs text-zinc-500 mt-0.5">
+                      {project.due_date ? `Due ${new Date(project.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'No deadline'}
+                      {project.budget ? ` • $${project.budget} ${project.currency}` : ''}
+                    </div>
                   </div>
                   <StatusBadge status={project.status} />
                 </div>
               ))}
+
+              {projects.length === 0 && (
+                <div className="py-6 text-center text-xs text-zinc-400 bg-zinc-50/50 rounded-lg border border-dashed border-zinc-200">
+                  No projects assigned to this client yet.
+                </div>
+              )}
             </div>
           </Card>
 

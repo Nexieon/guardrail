@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { AlertProvider } from "@/components/util/alertprovider"
 import { ModalProvider } from "@/components/util/modalprovider"
+import { HeaderTitleProvider } from "@/components/util/headertitleprovider"
 
 export const metadata: Metadata = {
   title: "GuardRail | Agency Workspace & Client Portal",
@@ -18,7 +19,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <AlertProvider>
           <ModalProvider>
-            {children}
+            <HeaderTitleProvider>
+              {children}
+            </HeaderTitleProvider>
           </ModalProvider>
         </AlertProvider>
       </body>

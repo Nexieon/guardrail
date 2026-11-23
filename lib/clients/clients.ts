@@ -31,7 +31,10 @@ export async function getWorkspaceClients(agencyId: string): Promise<Client[]> {
 
   const { data: clients, error } = await supabase
     .from('clients')
-    .select('*')
+    .select(`
+      *,
+      projects:projects(id, status)
+    `)
     .eq('agency_id', agencyId)
     .order('created_at', { ascending: false })
 
@@ -39,7 +42,15 @@ export async function getWorkspaceClients(agencyId: string): Promise<Client[]> {
     return []
   }
 
-  return (clients as Client[]) || []
+  return ((clients as Array<Client & { projects?: Array<{ id: string; status: string }> }>) || []).map(client => {
+    const activeCount = client.projects?.filter(p => p.status === 'in progress').length ?? 0
+    const copy = { ...client }
+    delete (copy as { projects?: unknown }).projects
+    return {
+      ...copy,
+      active_projects_count: activeCount
+    }
+  })
 }
 
 /**

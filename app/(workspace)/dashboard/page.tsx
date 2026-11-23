@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser'
 import { getUserNotifications, markNotificationAsRead } from '@/lib/notifications'
 import {
+  FolderKanban,
   UserPlus,
   LayoutTemplate,
   CreditCard
@@ -15,6 +16,7 @@ import {
 import Link from 'next/link'
 
 const quickActions = [
+  { name: 'Projects Board', icon: FolderKanban, href: '/projects' },
   { name: 'Invite a Client', icon: UserPlus, href: '/clients' },
   { name: 'Create a Template', icon: LayoutTemplate, href: '/templates' },
   { name: 'Connect Stripe', icon: CreditCard, href: '/billing' },

@@ -42,6 +42,9 @@ export default function NewClientForm({ onSuccess, onCancel }: NewClientFormProp
     setIsSubmitting(false)
 
     if (result.success && result.data) {
+      if (result.notification && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('guardrail:notification', { detail: result.notification }))
+      }
       if (onSuccess) onSuccess(result.data.id)
     } else {
       showAlert({

@@ -129,7 +129,7 @@ export default function ClientsTableUI({ initialClients }: Props) {
                   <SortHeader label="Status" onClick={() => handleSort('status')} />
                 </th>
                 <th className="px-6 py-4">
-                  <SortHeader label="Active Projects" align="center" onClick={() => handleSort('total_billed')} />
+                  <SortHeader label="Active Projects" align="center" onClick={() => handleSort('active_projects_count')} />
                 </th>
                 <th className="px-6 py-4">
                   <SortHeader label="Last Login" onClick={() => handleSort('last_login_at')} />
